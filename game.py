@@ -11,6 +11,10 @@ screen = pygame.display.set_mode(size=(wWidth, wHeight))
 
 running = True
 
+gravityEnable = False
+frictionEnable = True
+ceilingEnable = True
+
 testx = 500
 testy = 850
 testRect = pygame.Rect(testx,testy,20,20)
@@ -133,11 +137,12 @@ while running:
 	#print(aiming)
 	
 	# Modifiers
+	if gravityEnable:
+		yModifier += gravity
 
-	yModifier += gravity
-
-	yModifier *= 0.9999
-	xModifier *= 0.9999
+	if frictionEnable:
+		yModifier *= 0.9999
+		xModifier *= 0.9999
 
 	#if xModifier < 0.01:
 	#	xModifier = 0
@@ -158,6 +163,10 @@ while running:
 		if testy > wHeight - 20:
 			yModifier *= -1
 			yRebound = framecounter
+		if ceilingEnable:
+			if testy < 0:
+				yModifier *= -1
+				yRebound = framecounter
 
 	if framecounter % 10 == 0:
 		testx += xModifier
