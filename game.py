@@ -14,9 +14,12 @@ running = True
 testx = 500
 testy = 850
 testRect = pygame.Rect(testx,testy,20,20)
+mouseRect1 = pygame.Rect(-100,-100,20,20)
+mouseRect2 = pygame.Rect(-100,-100,20,20)
+angleInfoRect = pygame.Rect(-100,-100,20,20)
 dirtyRects = []
 
-xModifier = 10
+xModifier = 0	
 yModifier = 0
 
 gravity = 0.01
@@ -34,7 +37,11 @@ mouseAngle = 0
 mouseDistance = 0
 
 throw = False
+aiming = False
 throwMult = 3
+
+font = pygame.font.SysFont("Arial", 20)
+
 
 while running:
 	framecounter += 1
@@ -47,19 +54,41 @@ while running:
 			mouseStartx = event.pos[0]
 			mouseStarty = event.pos[1]
 
-			print(mouseStartx, mouseStarty)
+			aiming = True
+
+			#print(mouseStartx, mouseStarty)
 
 		if event.type == pygame.MOUSEBUTTONUP:
 			mouseEndx = event.pos[0]
 			mouseEndy = event.pos[1]
 
 			throw = True
+			aiming = False
 
 			#print(mouseEndx, mouseEndy)
 
 	# Mouse angle, distance 180/pi
 	# math.atan(y dist / x dist)
 	
+	if aiming:
+		mouseCurrentx = pygame.mouse.get_pos()[0]
+		mouseCurrenty = pygame.mouse.get_pos()[1]
+
+		mouseDistancexD = (mouseStartx - mouseCurrentx) if (mouseStartx - mouseCurrentx) != 0 else 1
+		mouseDistanceyD = (mouseStarty - mouseCurrenty)
+
+		mouseAngleD = math.atan(mouseDistanceyD / mouseDistancexD) * (180/math.pi) * -1
+		mouseDistanceD = math.sqrt(abs(mouseDistancexD ** 2) + abs(mouseDistanceyD ** 2))
+
+		dirtyRects.append(mouseRect1)
+		dirtyRects.append(mouseRect2)
+		dirtyRects.append(angleInfoRect)
+
+		mouseRect1 = pygame.Rect(mouseStartx, mouseStarty, 20, 20)
+		mouseRect2 = pygame.Rect(mouseCurrentx, mouseCurrenty, 20, 20)
+		angleInfoRect = pygame.Rect(mouseStartx + 50, mouseStarty, 100, 100)
+		text = font.render(str(math.floor(mouseAngleD)), False, (255,255,255))
+
 	if throw:
 		mouseDistancex = (mouseStartx - mouseEndx) if (mouseStartx - mouseEndx) != 0 else 1
 		mouseDistancey = (mouseStarty - mouseEndy)
@@ -72,8 +101,8 @@ while running:
 		mouseDistance = math.sqrt(abs(mouseDistancex ** 2) + abs(mouseDistancey ** 2))
 		#print(mouseDistance)
 
-		xModifier += (mouseDistancex / mouseDistance) * throwMult
-		yModifier += (mouseDistancey / mouseDistance) * throwMult
+		xModifier += (mouseDistancex / mouseDistance) * throwMult * (abs(mouseDistance)/200)
+		yModifier += (mouseDistancey / mouseDistance) * throwMult * (abs(mouseDistance)/200)
 
 		#xModifier += math.sin(90 - mouseAngle)
 		#yModifier += math.cos(90 - mouseAngle)
@@ -92,6 +121,16 @@ while running:
 	testRect = pygame.Rect(testx,testy,20,20)
 
 	pygame.draw.rect(screen, (5,5,250), testRect)
+
+	if aiming:
+		dirtyRects.append(mouseRect1)
+		dirtyRects.append(mouseRect2)
+		dirtyRects.append(angleInfoRect)
+		pygame.draw.rect(screen, (255,255,255), mouseRect1)
+		pygame.draw.rect(screen, (255,255,255), mouseRect2)
+		screen.blit(text, angleInfoRect)
+
+	#print(aiming)
 	
 	# Modifiers
 
