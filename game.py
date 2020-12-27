@@ -92,6 +92,16 @@ def checkBorders():
 			modifier.y *= -1 * physicalEffects.get("elasticty")
 			coords.y = 1
 
+def drawScreen():
+	"""Fills screen and draws the box as well as the angle and aiming boxes"""
+	screen.fill((0,0,0))
+
+	pygame.draw.rect(screen, (5,5,250), testRect)
+
+	if aiming:
+		pygame.draw.rect(screen, (255,255,255), mouseRect1)
+		pygame.draw.rect(screen, (255,255,255), mouseRect2)
+		screen.blit(text, angleInfoRect)
 
 while running:
 	framecounter += 1
@@ -136,20 +146,6 @@ while running:
 		dirtyRects.append(angleInfoRect)
 
 	
-	# Fill, and rect update
-
-	screen.fill((0,0,0))
-
-	dirtyRects.append(testRect)
-	testRect = pygame.Rect(coords.x,coords.y,20,20)
-	pygame.draw.rect(screen, (5,5,250), testRect)
-
-	if aiming:
-		pygame.draw.rect(screen, (255,255,255), mouseRect1)
-		pygame.draw.rect(screen, (255,255,255), mouseRect2)
-		screen.blit(text, angleInfoRect)
-
-	
 	if throw:
 		mouseDistance = mouseDistances(mouse.end)
 
@@ -158,9 +154,6 @@ while running:
 		modifier.x += (mouseDistance.x / mouseDistanceReal) * throwMult * (abs(mouseDistanceReal)/200)
 		modifier.y += (mouseDistance.y / mouseDistanceReal) * throwMult * (abs(mouseDistanceReal)/200)
 
-	#print(modifier.x, modifier.y)
-
-	throw = False
 
 	applyEffects()
 	checkBorders()
@@ -168,10 +161,14 @@ while running:
 	coords.x += modifier.x / 10
 	coords.y += modifier.y / 10
 
-	# Tidy and update
-
 	dirtyRects.append(testRect)
-	
+	testRect = pygame.Rect(coords.x,coords.y,20,20)
+	dirtyRects.append(testRect)
+
+
+	drawScreen()
+
 	pygame.display.update(dirtyRects)
 
+	throw = False
 	dirtyRects = []
