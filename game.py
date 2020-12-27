@@ -9,36 +9,46 @@ wHeight = 1000
 
 screen = pygame.display.set_mode(size=(wWidth, wHeight))
 
+class Vector2d:
+	def __init__(self, x=0, y=0):
+		self.x = x
+		self.y = y
+
+class MouseInfo:
+	def __init__(self, start, end, current):
+		self.start = start
+		self.end = end
+		self.current = current
+
 running = True
 
 gravityEnable = False
 frictionEnable = True
 ceilingEnable = True
 
-testx = 500
-testy = 850
-testRect = pygame.Rect(testx,testy,20,20)
+#coords.x = 500
+#coords.y = 850
+coords = Vector2d(500,850)
+testRect = pygame.Rect(coords.x,coords.y,20,20)
 mouseRect1 = pygame.Rect(-100,-100,20,20)
 mouseRect2 = pygame.Rect(-100,-100,20,20)
 angleInfoRect = pygame.Rect(-100,-100,20,20)
 dirtyRects = []
 
-xModifier = 0	
-yModifier = 0
+modifier = Vector2d()
 
-gravity = 0.01
+physicalEffects ={
+	"gravity": 0.01,
+	"friction": 0.9999,
+	"elasticty": 1
+}
 
 framecounter = 0
-xRebound = 0
-yRebound = 0
 
-mouseStartx = 0
-mouseStarty = 0
-mouseEndx = 0
-mouseEndy = 0
+mouse = MouseInfo(Vector2d(), Vector2d(), Vector2d())
 
 mouseAngle = 0
-mouseDistance = 0
+mouseDistance = [0,0,0]
 
 throw = False
 aiming = False
@@ -46,132 +56,114 @@ throwMult = 3
 
 font = pygame.font.SysFont("Arial", 20)
 
+def mouseDistances(targetPoint):
+	"""Returns a list of the Vertical, Horizontal, and Hypotunuse distances"""
+	mouseDistancex = (mouse.start.x - targetPoint.x) if (mouse.start.x - targetPoint.x) != 0 else 1
+	mouseDistancey = (mouse.start.y - targetPoint.y)
+	return Vector2d(mouseDistancex, mouseDistancey)
+
+def pythagoras(horizontal, vertical):
+	distance = math.sqrt(abs(horizontal ** 2) + abs(vertical ** 2))
+	return distance
+
+def applyModifiers():
+	if gravityEnable:
+		modifier.y += physicalEffects.get("gravity")
+
+	if frictionEnable:
+		modifier.x *= physicalEffects.get("friction")
+		modifier.y *= physicalEffects.get("friction")
+
+	if coords.x > wWidth - 20:
+		modifier.x *= -1 * physicalEffects.get("elasticty")
+		coords.x = wWidth - 21
+	elif coords.x < 0:
+		modifier.x *= -1 * physicalEffects.get("elasticty")
+		coords.x = 1
+
+	if coords.y > wHeight - 20:
+		modifier.y *= -1 * physicalEffects.get("elasticty")
+		coords.y = wHeight - 21
+
+	if ceilingEnable:
+		if coords.y < 0:
+			modifier.y *= -1 * physicalEffects.get("elasticty")
+			coords.y = 1
+
+	coords.x += modifier.x / 10
+	coords.y += modifier.y / 10
 
 while running:
 	framecounter += 1
+
+	# Mouse and exit event handling
 
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
 
 		if event.type == pygame.MOUSEBUTTONDOWN:
-			mouseStartx = event.pos[0]
-			mouseStarty = event.pos[1]
+			mouse.start.x = event.pos[0]
+			mouse.start.y = event.pos[1]
 
 			aiming = True
 
-			#print(mouseStartx, mouseStarty)
-
 		if event.type == pygame.MOUSEBUTTONUP:
-			mouseEndx = event.pos[0]
-			mouseEndy = event.pos[1]
+			mouse.end.x = event.pos[0]
+			mouse.end.y = event.pos[1]
 
 			throw = True
 			aiming = False
 
-			#print(mouseEndx, mouseEndy)
-
-	# Mouse angle, distance 180/pi
-	# math.atan(y dist / x dist)
-	
 	if aiming:
-		mouseCurrentx = pygame.mouse.get_pos()[0]
-		mouseCurrenty = pygame.mouse.get_pos()[1]
+		mouse.current.x = pygame.mouse.get_pos()[0]
+		mouse.current.y = pygame.mouse.get_pos()[1]
 
-		mouseDistancexD = (mouseStartx - mouseCurrentx) if (mouseStartx - mouseCurrentx) != 0 else 1
-		mouseDistanceyD = (mouseStarty - mouseCurrenty)
-
-		mouseAngleD = math.atan(mouseDistanceyD / mouseDistancexD) * (180/math.pi) * -1
-		mouseDistanceD = math.sqrt(abs(mouseDistancexD ** 2) + abs(mouseDistanceyD ** 2))
+		mouseDistance = mouseDistances(mouse.current)
+		mouseAngle = math.atan(mouseDistance.y / mouseDistance.x) * (180/math.pi) * -1
 
 		dirtyRects.append(mouseRect1)
 		dirtyRects.append(mouseRect2)
 		dirtyRects.append(angleInfoRect)
 
-		mouseRect1 = pygame.Rect(mouseStartx, mouseStarty, 20, 20)
-		mouseRect2 = pygame.Rect(mouseCurrentx, mouseCurrenty, 20, 20)
-		angleInfoRect = pygame.Rect(mouseStartx + 50, mouseStarty, 100, 100)
-		text = font.render(str(math.floor(mouseAngleD)), False, (255,255,255))
+		mouseRect1 = pygame.Rect(mouse.start.x, mouse.start.y, 20, 20)
+		mouseRect2 = pygame.Rect(mouse.current.x, mouse.current.y, 20, 20)
+		angleInfoRect = pygame.Rect(mouse.start.x + 50, mouse.start.y, 100, 100)
+		text = font.render(str(math.floor(mouseAngle)), False, (255,255,255))
 
-	if throw:
-		mouseDistancex = (mouseStartx - mouseEndx) if (mouseStartx - mouseEndx) != 0 else 1
-		mouseDistancey = (mouseStarty - mouseEndy)
+		dirtyRects.append(mouseRect1)
+		dirtyRects.append(mouseRect2)
+		dirtyRects.append(angleInfoRect)
 
-		#print(mouseDistancex, mouseDistancey)
-
-		mouseAngle = math.atan(mouseDistancey / mouseDistancex) * (180/math.pi) * -1
-		#print(mouseAngle)
-
-		mouseDistance = math.sqrt(abs(mouseDistancex ** 2) + abs(mouseDistancey ** 2))
-		#print(mouseDistance)
-
-		xModifier += (mouseDistancex / mouseDistance) * throwMult * (abs(mouseDistance)/200)
-		yModifier += (mouseDistancey / mouseDistance) * throwMult * (abs(mouseDistance)/200)
-
-		#xModifier += math.sin(90 - mouseAngle)
-		#yModifier += math.cos(90 - mouseAngle)
-
-		#print((math.sin(90 - mouseAngle)), (math.cos(90 - mouseAngle)))
-
-
-
-	throw = False
+	
 	# Fill, and rect update
 
 	screen.fill((0,0,0))
 
 	dirtyRects.append(testRect)
-
-	testRect = pygame.Rect(testx,testy,20,20)
-
+	testRect = pygame.Rect(coords.x,coords.y,20,20)
 	pygame.draw.rect(screen, (5,5,250), testRect)
 
 	if aiming:
-		dirtyRects.append(mouseRect1)
-		dirtyRects.append(mouseRect2)
-		dirtyRects.append(angleInfoRect)
 		pygame.draw.rect(screen, (255,255,255), mouseRect1)
 		pygame.draw.rect(screen, (255,255,255), mouseRect2)
 		screen.blit(text, angleInfoRect)
 
-	#print(aiming)
 	
-	# Modifiers
-	if gravityEnable:
-		yModifier += gravity
+	if throw:
+		mouseDistance = mouseDistances(mouse.end)
 
-	if frictionEnable:
-		yModifier *= 0.9999
-		xModifier *= 0.9999
+		mouseDistanceReal = pythagoras(mouseDistance.x, mouseDistance.y)
 
-	#if xModifier < 0.01:
-	#	xModifier = 0
-	#if yModifier < 0.01:
-	#	yModifier = 0
+		modifier.x += (mouseDistance.x / mouseDistanceReal) * throwMult * (abs(mouseDistanceReal)/200)
+		modifier.y += (mouseDistance.y / mouseDistanceReal) * throwMult * (abs(mouseDistanceReal)/200)
 
-	#print(xModifier, yModifier)
+	#print(modifier.x, modifier.y)
 
-	if (framecounter - xRebound) > 400:
-		if testx > wWidth - 20:
-			xModifier *= -1
-			xRebound = framecounter
-		elif testx < 0:
-			xModifier *= -1
-			xRebound = framecounter
+	throw = False
 
-	if (framecounter - yRebound) > 400:
-		if testy > wHeight - 20:
-			yModifier *= -1
-			yRebound = framecounter
-		if ceilingEnable:
-			if testy < 0:
-				yModifier *= -1
-				yRebound = framecounter
+	applyModifiers()
 
-	if framecounter % 10 == 0:
-		testx += xModifier
-		testy += yModifier
-	
 	# Tidy and update
 
 	dirtyRects.append(testRect)
