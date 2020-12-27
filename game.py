@@ -26,8 +26,6 @@ gravityEnable = False
 frictionEnable = True
 ceilingEnable = True
 
-#coords.x = 500
-#coords.y = 850
 coords = Vector2d(500,850)
 testRect = pygame.Rect(coords.x,coords.y,20,20)
 mouseRect1 = pygame.Rect(-100,-100,20,20)
@@ -57,16 +55,18 @@ throwMult = 3
 font = pygame.font.SysFont("Arial", 20)
 
 def mouseDistances(targetPoint):
-	"""Returns a list of the Vertical, Horizontal, and Hypotunuse distances"""
+	"""Returns a Verctor2D of the Horiozntal and Vertical distance"""
 	mouseDistancex = (mouse.start.x - targetPoint.x) if (mouse.start.x - targetPoint.x) != 0 else 1
 	mouseDistancey = (mouse.start.y - targetPoint.y)
 	return Vector2d(mouseDistancex, mouseDistancey)
 
 def pythagoras(horizontal, vertical):
+	"""Return the hypotunuse of a right-angle trianlge"""
 	distance = math.sqrt(abs(horizontal ** 2) + abs(vertical ** 2))
 	return distance
 
-def applyModifiers():
+def applyEffects():
+	"""Apply Gravity and Friction to modifier"""
 	if gravityEnable:
 		modifier.y += physicalEffects.get("gravity")
 
@@ -74,6 +74,8 @@ def applyModifiers():
 		modifier.x *= physicalEffects.get("friction")
 		modifier.y *= physicalEffects.get("friction")
 
+def checkBorders():
+	"""Check for border collicsion and repel"""
 	if coords.x > wWidth - 20:
 		modifier.x *= -1 * physicalEffects.get("elasticty")
 		coords.x = wWidth - 21
@@ -90,8 +92,6 @@ def applyModifiers():
 			modifier.y *= -1 * physicalEffects.get("elasticty")
 			coords.y = 1
 
-	coords.x += modifier.x / 10
-	coords.y += modifier.y / 10
 
 while running:
 	framecounter += 1
@@ -162,7 +162,11 @@ while running:
 
 	throw = False
 
-	applyModifiers()
+	applyEffects()
+	checkBorders()
+
+	coords.x += modifier.x / 10
+	coords.y += modifier.y / 10
 
 	# Tidy and update
 
